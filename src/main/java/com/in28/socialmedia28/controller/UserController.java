@@ -3,6 +3,7 @@ package com.in28.socialmedia28.controller;
 
 import com.in28.socialmedia28.advice.ErrorResponse;
 import com.in28.socialmedia28.dao.entities.User;
+import com.in28.socialmedia28.dao.entities.UserV2;
 import com.in28.socialmedia28.exception.UserNotFoundException;
 import com.in28.socialmedia28.service.UserService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -23,7 +24,8 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.Locale;
 
-@RestController
+@RestController()
+@RequestMapping("/api")
 public class UserController {
     private static final Logger log = LoggerFactory.getLogger(UserController.class);
     private final UserService userService;
@@ -34,7 +36,7 @@ public class UserController {
         this.messageSource = messageSource;
     }
 
-    @GetMapping("/users")
+    @GetMapping("/v1/users")
     public List<User> getUsers() {
         return userService.getUsers();
     }
@@ -43,7 +45,7 @@ public class UserController {
             @ApiResponse(responseCode = "200", description = "OK", content = @Content(schema = @Schema(implementation = User.class))),
             @ApiResponse(responseCode = "404", description = "Not Found", content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
     })
-    @GetMapping("/users/{id}")
+    @GetMapping("/v1/users/{id}")
     public ResponseEntity<User> getUser(@PathVariable Long id) {
         User user = userService.getUser(id);
 
@@ -52,7 +54,44 @@ public class UserController {
         return ResponseEntity.ok(user);
     }
 
-    @PostMapping("/users")
+    // Url versioning
+    @Operation(summary = "Get User by ID", description = "Get a user by its ID", responses = {
+            @ApiResponse(responseCode = "200", description = "OK", content = @Content(schema = @Schema(implementation = User.class))),
+            @ApiResponse(responseCode = "404", description = "Not Found", content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+    })
+    @GetMapping("/v2/users/{id}")
+    public ResponseEntity<UserV2> getUserV2(@PathVariable Long id) {
+        UserV2 user = userService.getUserV2(id);
+
+        if (user == null) {
+            log.error("User with id {} not found", id);
+            throw new UserNotFoundException("User not found");
+        }
+
+        return ResponseEntity.ok(user);
+    }
+
+    // parameter versioning
+    // note that we have also headers versioning and media type versioning but try to avoid them
+    @GetMapping("/users/{id}")
+    public ResponseEntity<Object> getUserWithParam(@PathVariable Long id, @RequestParam(value = "version", defaultValue = "1") int version) {
+        if (version == 1) {
+            User user = userService.getUser(id);
+            asserUserExist(id, user);
+            return ResponseEntity.ok(user);
+        } else if (version == 2) {
+            UserV2 user = userService.getUserV2(id);
+            if (user == null) {
+                log.error("User with id {} not found", id);
+                throw new UserNotFoundException("User not found");
+            }
+            return ResponseEntity.ok(user);
+        } else {
+            return ResponseEntity.badRequest().body("Invalid version");
+        }
+    }
+
+    @PostMapping("/v1/users")
     public ResponseEntity<User> createUser(@Valid @RequestBody User user) {
         User savedUser = userService.createUser(user.getName(), user.getBirthDate());
 
@@ -64,12 +103,24 @@ public class UserController {
         return ResponseEntity.created(location).build();
     }
 
-    @DeleteMapping("/users/{id}")
+    @PostMapping("/v2/users")
+    public ResponseEntity<UserV2> createUserV2(@Valid @RequestBody UserV2 user) {
+        UserV2 savedUser = userService.createUserV2(user.getFirstName(), user.getLastName(), user.getBirthDate());
+
+        URI location = ServletUriComponentsBuilder.fromCurrentRequest()
+                .path("/{id}")
+                .buildAndExpand(savedUser.getId())
+                .toUri();
+
+        return ResponseEntity.created(location).build();
+    }
+
+    @DeleteMapping("/v1/users/{id}")
     public void deleteUser(@PathVariable Long id) {
         userService.deleteUser(id);
     }
 
-    @PutMapping("/users/{id}")
+    @PutMapping("/v1/users/{id}")
     public User updateUser(@PathVariable Long id, @RequestBody User user) {
         return userService.updateUser(id, user.getName(), user.getBirthDate());
     }
@@ -78,7 +129,7 @@ public class UserController {
             @ApiResponse(responseCode = "200", description = "OK", content = @Content(schema = @Schema(implementation = String.class))),
             @ApiResponse(responseCode = "404", description = "Not Found", content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
     })
-    @GetMapping("/users/{id}/i18n")
+    @GetMapping("/v1/users/{id}/i18n")
     public String getUserI18n(@PathVariable Long id) {
         // get the locale from the LocaleContextHolder that is specified by the user with accept-language on the header
         Locale locale = LocaleContextHolder.getLocale();
