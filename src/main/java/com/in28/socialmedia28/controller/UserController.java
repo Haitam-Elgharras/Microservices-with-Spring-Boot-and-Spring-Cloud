@@ -12,20 +12,26 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import jakarta.validation.Valid;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.context.MessageSource;
+import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import java.net.URI;
+import java.time.LocalDate;
 import java.util.List;
+import java.util.Locale;
 
 @RestController
 public class UserController {
     private static final Logger log = LoggerFactory.getLogger(UserController.class);
     private final UserService userService;
+    private MessageSource messageSource;
 
-    public UserController(UserService userService) {
+    public UserController(UserService userService, MessageSource messageSource) {
         this.userService = userService;
+        this.messageSource = messageSource;
     }
 
     @GetMapping("/users")
@@ -41,10 +47,7 @@ public class UserController {
     public ResponseEntity<User> getUser(@PathVariable Long id) {
         User user = userService.getUser(id);
 
-        if (user == null) {
-            log.error("User with id {} not found", id);
-            throw new UserNotFoundException("User not found");
-        }
+        asserUserExist(id, user);
 
         return ResponseEntity.ok(user);
     }
@@ -70,14 +73,31 @@ public class UserController {
     public User updateUser(@PathVariable Long id, @RequestBody User user) {
         return userService.updateUser(id, user.getName(), user.getBirthDate());
     }
+
+    @Operation(summary = "Get User i18n", description = "Get a user by its ID with internationalization", responses = {
+            @ApiResponse(responseCode = "200", description = "OK", content = @Content(schema = @Schema(implementation = String.class))),
+            @ApiResponse(responseCode = "404", description = "Not Found", content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+    })
+    @GetMapping("/users/{id}/i18n")
+    public String getUserI18n(@PathVariable Long id) {
+        // get the locale from the LocaleContextHolder that is specified by the user with accept-language on the header
+        Locale locale = LocaleContextHolder.getLocale();
+        log.info("Locale: {}", locale);
+
+        User user = userService.getUser(id);
+        asserUserExist(id, user);
+        int age = LocalDate.now().getYear() - user.getBirthDate().getYear();
+
+        return messageSource.getMessage("user.info", new Object[]{user.getName(), age}, "Default Message", locale);
+    }
+
+    private static void asserUserExist(Long id, User user) {
+        if (user == null) {
+            log.error("User with id {} not found", id);
+            throw new UserNotFoundException("User not found");
+        }
+    }
+
+
 }
 
-/*
-    @Operation(summary = "Add Certificate Template", description = "Adding a new Certificate Template", responses = {
-            @ApiResponse(responseCode = "200", description = "OK", content = @Content(schema = @Schema(implementation = CertificateDTO.class))),
-            @ApiResponse(responseCode = "400", description = "Bad Request", content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
-            @ApiResponse(responseCode = "401", description = "Unauthorized", content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
-            @ApiResponse(responseCode = "404", description = "Not Found", content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
-            @ApiResponse(responseCode = "500", description = "Error", content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
-    })
-     */
