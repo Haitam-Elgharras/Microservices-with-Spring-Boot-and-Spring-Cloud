@@ -15,6 +15,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.MessageSource;
 import org.springframework.context.i18n.LocaleContextHolder;
+import org.springframework.hateoas.EntityModel;
+import org.springframework.hateoas.server.mvc.WebMvcLinkBuilder;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
@@ -23,6 +25,8 @@ import java.net.URI;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Locale;
+
+import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 
 @RestController()
 @RequestMapping("/api")
@@ -45,13 +49,23 @@ public class UserController {
             @ApiResponse(responseCode = "200", description = "OK", content = @Content(schema = @Schema(implementation = User.class))),
             @ApiResponse(responseCode = "404", description = "Not Found", content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
     })
+
     @GetMapping("/v1/users/{id}")
-    public ResponseEntity<User> getUser(@PathVariable Long id) {
+    public EntityModel<User> getUser(@PathVariable Long id) {
         User user = userService.getUser(id);
 
         asserUserExist(id, user);
 
-        return ResponseEntity.ok(user);
+        // add the user and links to get all users and update user
+        EntityModel<User> entityModel = EntityModel.of(user);
+
+        WebMvcLinkBuilder linkToUsers = WebMvcLinkBuilder.linkTo(methodOn(this.getClass()).getUsers());
+        WebMvcLinkBuilder linkToUpdateUser = WebMvcLinkBuilder.linkTo(methodOn(this.getClass()).updateUser(id, user));
+
+        entityModel.add(linkToUsers.withRel("all-users"));
+        entityModel.add(linkToUpdateUser.withRel("update-user"));
+
+        return entityModel;
     }
 
     // Url versioning
