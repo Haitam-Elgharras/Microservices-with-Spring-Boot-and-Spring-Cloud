@@ -5,7 +5,8 @@ import com.in28.socialmedia28.advice.ErrorResponse;
 import com.in28.socialmedia28.dao.entities.User;
 import com.in28.socialmedia28.dao.entities.UserV2;
 import com.in28.socialmedia28.exception.UserNotFoundException;
-import com.in28.socialmedia28.service.UserService;
+import com.in28.socialmedia28.service.dtos.UserDto;
+import com.in28.socialmedia28.service.services.interfaces.UserService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -41,7 +42,7 @@ public class UserController {
     }
 
     @GetMapping("/v1/users")
-    public List<User> getUsers() {
+    public List<UserDto> getUsers() {
         return userService.getUsers();
     }
 
@@ -49,7 +50,6 @@ public class UserController {
             @ApiResponse(responseCode = "200", description = "OK", content = @Content(schema = @Schema(implementation = User.class))),
             @ApiResponse(responseCode = "404", description = "Not Found", content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
     })
-
     @GetMapping("/v1/users/{id}")
     public EntityModel<User> getUser(@PathVariable Long id) {
         User user = userService.getUser(id);
@@ -106,15 +106,16 @@ public class UserController {
     }
 
     @PostMapping("/v1/users")
-    public ResponseEntity<User> createUser(@Valid @RequestBody User user) {
-        User savedUser = userService.createUser(user.getName(), user.getBirthDate());
+    public ResponseEntity<UserDto> createUser(@Valid @RequestBody User user) {
+        UserDto savedUser = userService.createUser(user.getName(), user.getBirthDate(), user.getPassword());
 
         URI location = ServletUriComponentsBuilder.fromCurrentRequest()
                 .path("/{id}")
                 .buildAndExpand(savedUser.getId())
                 .toUri();
+        log.info("User created with id {}", savedUser);
 
-        return ResponseEntity.created(location).build();
+        return ResponseEntity.created(location).body(savedUser);
     }
 
     @PostMapping("/v2/users")
