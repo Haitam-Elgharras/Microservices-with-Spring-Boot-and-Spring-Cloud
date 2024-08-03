@@ -9,8 +9,8 @@ import lombok.Data;
 
 import java.time.LocalDate;
 
-@JsonFilter("UserFilter")
 @Data
+@JsonFilter("UserFilter")
 public class UserDto {
 
         private Long id;

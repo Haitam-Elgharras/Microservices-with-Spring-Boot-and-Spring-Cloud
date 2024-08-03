@@ -30,6 +30,8 @@ import java.net.URI;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
+import java.util.Set;
 
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 
@@ -50,24 +52,35 @@ public class UserController {
         return userService.getUsers();
     }
 
-    @GetMapping("/v1/users/dynamicFilter")
-    public List<MappingJacksonValue> getUsersFiltered() {
+    @GetMapping("/v1/users/dynamicFilter/normal")
+    public MappingJacksonValue getUsersFilteredNormal() {
         List<UserDto> users = userService.getUsers();
 
-        return users.stream().map(user -> {
-            MappingJacksonValue mappingJacksonValue = new MappingJacksonValue(user);
-            FilterProvider filters;
-            SimpleBeanPropertyFilter filter;
-            if (user.getIsVIP()) {
-                filter = SimpleBeanPropertyFilter.filterOutAllExcept("id", "name", "birthDate", "isVIP", "vipCode");
-                filters = new SimpleFilterProvider().addFilter("UserFilter", filter);
-            } else {
-                filter = SimpleBeanPropertyFilter.filterOutAllExcept("id", "name", "birthDate");
-                filters = new SimpleFilterProvider().addFilter("UserFilter", filter);
-            }
-            mappingJacksonValue.setFilters(filters);
-            return mappingJacksonValue;
-        }).toList();
+//        MappingJacksonValue mappingVip = new MappingJacksonValue(users.stream().filter(UserDto::getIsVIP).toList());
+//        SimpleBeanPropertyFilter filterVip = SimpleBeanPropertyFilter.serializeAll();
+//        FilterProvider filtersVip = new SimpleFilterProvider().addFilter("UserFilter", filterVip);
+//        mappingVip.setFilters(filtersVip);
+
+        MappingJacksonValue mappingNormal = new MappingJacksonValue(users.stream().filter(userDto -> !userDto.getIsVIP()).toList());
+        SimpleBeanPropertyFilter filterNormal = SimpleBeanPropertyFilter.filterOutAllExcept("id", "name", "birthDate","password");
+        FilterProvider filtersNormal = new SimpleFilterProvider().addFilter("UserFilter", filterNormal);
+        mappingNormal.setFilters(filtersNormal);
+
+        // we could not return both filters in the same response
+        return mappingNormal;
+    }
+
+    @GetMapping("/v1/users/dynamicFilter/vip")
+    public MappingJacksonValue getUsersFilteredVip() {
+        List<UserDto> users = userService.getUsers();
+
+        MappingJacksonValue mappingVip = new MappingJacksonValue(users.stream().filter(UserDto::getIsVIP).toList());
+        SimpleBeanPropertyFilter filterVip = SimpleBeanPropertyFilter.serializeAll();
+        FilterProvider filtersVip = new SimpleFilterProvider().addFilter("UserFilter", filterVip);
+        mappingVip.setFilters(filtersVip);
+
+        // we could not return both filters in the same response
+        return mappingVip;
     }
 
 
