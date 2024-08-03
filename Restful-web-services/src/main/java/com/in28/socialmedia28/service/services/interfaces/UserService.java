@@ -8,7 +8,7 @@ import java.time.LocalDate;
 import java.util.List;
 
 public interface UserService {
-    UserDto createUser(String name, LocalDate birthDate, String password);
+    UserDto createUser(User user);
     UserV2 createUserV2(String firstName, String lastName, LocalDate birthDate);
     void deleteUser(Long id);
     User updateUser(Long id, String name, LocalDate birthDate);

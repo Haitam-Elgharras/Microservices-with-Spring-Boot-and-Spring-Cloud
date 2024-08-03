@@ -1,6 +1,9 @@
 package com.in28.socialmedia28.controller;
 
 
+import com.fasterxml.jackson.databind.ser.FilterProvider;
+import com.fasterxml.jackson.databind.ser.impl.SimpleBeanPropertyFilter;
+import com.fasterxml.jackson.databind.ser.impl.SimpleFilterProvider;
 import com.in28.socialmedia28.advice.ErrorResponse;
 import com.in28.socialmedia28.dao.entities.User;
 import com.in28.socialmedia28.dao.entities.UserV2;
@@ -19,6 +22,7 @@ import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.hateoas.EntityModel;
 import org.springframework.hateoas.server.mvc.WebMvcLinkBuilder;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.json.MappingJacksonValue;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
@@ -34,7 +38,7 @@ import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 public class UserController {
     private static final Logger log = LoggerFactory.getLogger(UserController.class);
     private final UserService userService;
-    private MessageSource messageSource;
+    private final MessageSource messageSource;
 
     public UserController(UserService userService, MessageSource messageSource) {
         this.userService = userService;
@@ -45,6 +49,27 @@ public class UserController {
     public List<UserDto> getUsers() {
         return userService.getUsers();
     }
+
+    @GetMapping("/v1/users/dynamicFilter")
+    public List<MappingJacksonValue> getUsersFiltered() {
+        List<UserDto> users = userService.getUsers();
+
+        return users.stream().map(user -> {
+            MappingJacksonValue mappingJacksonValue = new MappingJacksonValue(user);
+            FilterProvider filters;
+            SimpleBeanPropertyFilter filter;
+            if (user.getIsVIP()) {
+                filter = SimpleBeanPropertyFilter.filterOutAllExcept("id", "name", "birthDate", "isVIP", "vipCode");
+                filters = new SimpleFilterProvider().addFilter("UserFilter", filter);
+            } else {
+                filter = SimpleBeanPropertyFilter.filterOutAllExcept("id", "name", "birthDate");
+                filters = new SimpleFilterProvider().addFilter("UserFilter", filter);
+            }
+            mappingJacksonValue.setFilters(filters);
+            return mappingJacksonValue;
+        }).toList();
+    }
+
 
     @Operation(summary = "Get User by ID", description = "Get a user by its ID", responses = {
             @ApiResponse(responseCode = "200", description = "OK", content = @Content(schema = @Schema(implementation = User.class))),
@@ -73,17 +98,6 @@ public class UserController {
             @ApiResponse(responseCode = "200", description = "OK", content = @Content(schema = @Schema(implementation = User.class))),
             @ApiResponse(responseCode = "404", description = "Not Found", content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
     })
-    @GetMapping("/v2/users/{id}")
-    public ResponseEntity<UserV2> getUserV2(@PathVariable Long id) {
-        UserV2 user = userService.getUserV2(id);
-
-        if (user == null) {
-            log.error("User with id {} not found", id);
-            throw new UserNotFoundException("User not found");
-        }
-
-        return ResponseEntity.ok(user);
-    }
 
     // parameter versioning
     // note that we have also headers versioning and media type versioning but try to avoid them
@@ -107,7 +121,7 @@ public class UserController {
 
     @PostMapping("/v1/users")
     public ResponseEntity<UserDto> createUser(@Valid @RequestBody User user) {
-        UserDto savedUser = userService.createUser(user.getName(), user.getBirthDate(), user.getPassword());
+        UserDto savedUser = userService.createUser(user);
 
         URI location = ServletUriComponentsBuilder.fromCurrentRequest()
                 .path("/{id}")

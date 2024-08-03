@@ -45,12 +45,9 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public UserDto createUser(String name, LocalDate birthDate, String password) {
-        User user = new User();
-        user.setName(name);
-        user.setBirthDate(birthDate);
-        user.setPassword(password);
-        return userMapper.userToUserDto(userRepository.save(user));
+    public UserDto createUser(User user) {
+        User savedUser = userRepository.save(user);
+        return userMapper.userToUserDto(savedUser);
     }
 
     @Override
