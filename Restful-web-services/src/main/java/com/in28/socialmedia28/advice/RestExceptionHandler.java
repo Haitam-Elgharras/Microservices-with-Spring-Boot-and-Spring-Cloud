@@ -33,7 +33,7 @@ public class RestExceptionHandler extends ResponseEntityExceptionHandler {
     protected ResponseEntity<Object> handleMethodArgumentNotValid(MethodArgumentNotValidException ex, HttpHeaders headers, HttpStatusCode status, WebRequest request) {
         ErrorResponse response = new ErrorResponse(HttpStatus.BAD_REQUEST);
 
-        String message = ex.getFieldErrors().stream().map(fieldError -> fieldError.getField() + ": " + fieldError.getDefaultMessage()).reduce("", (acc, elem) -> acc + elem + " and ");
+        String message = ex.getFieldErrors().stream().map(fieldError -> fieldError.getDefaultMessage()).reduce("", (acc, elem) -> acc + elem + " and ");
         response.setMessage("Error count " + ex.getErrorCount() + " " + message);
 
         return buildResponseEntity(response);
@@ -43,4 +43,6 @@ public class RestExceptionHandler extends ResponseEntityExceptionHandler {
     private ResponseEntity<Object> buildResponseEntity(ErrorResponse errorResponse){
         return new ResponseEntity<>(errorResponse, errorResponse.getStatus());
     }
+
+
 }
