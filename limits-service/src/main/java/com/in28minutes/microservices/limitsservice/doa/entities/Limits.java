@@ -1,4 +1,4 @@
-package com.in28minutes.limitsservice.doa.entities;
+package com.in28minutes.microservices.limitsservice.doa.entities;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;

@@ -1,7 +1,7 @@
-package com.in28minutes.limitsservice.controller;
+package com.in28minutes.microservices.limitsservice.controller;
 
-import com.in28minutes.limitsservice.config.Configuration;
-import com.in28minutes.limitsservice.doa.entities.Limits;
+import com.in28minutes.microservices.limitsservice.config.Configuration;
+import com.in28minutes.microservices.limitsservice.doa.entities.Limits;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;

@@ -1,4 +1,4 @@
-package com.in28minutes.limitsservice.config;
+package com.in28minutes.microservices.limitsservice.config;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
