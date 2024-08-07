@@ -9,6 +9,8 @@
         <outputRelativeToContentRoot value="true" />
         <module name="api-gateway" />
         <module name="currency-exchange-service" />
+        <module name="currency-conversion-service" />
+        <module name="naming-server" />
       </profile>
     </annotationProcessing>
   </component>

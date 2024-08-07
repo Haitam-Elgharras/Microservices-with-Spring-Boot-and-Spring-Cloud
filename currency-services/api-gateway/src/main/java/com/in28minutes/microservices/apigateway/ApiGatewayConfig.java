@@ -7,7 +7,6 @@ import org.springframework.context.annotation.Configuration;
 
 @Configuration
 public class ApiGatewayConfig {
-
     // creating custom routes
     // we redirect the request to the lb://service-name, lb means load balancer and service-name is the name of the service
     @Bean
