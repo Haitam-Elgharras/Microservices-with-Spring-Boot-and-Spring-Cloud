@@ -1,6 +1,7 @@
 package com.in28minutes.microservices.currencyexchangeservice;
 
 
+import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import io.github.resilience4j.retry.annotation.Retry;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -13,7 +14,8 @@ public class CircuitBreakerController {
     private final Logger logger = Logger.getLogger(CircuitBreakerController.class.getName());
 
     @GetMapping("/sample-api")
-    @Retry(name="sample-api", fallbackMethod = "defaultFailResponse")
+//    @Retry(name="sample-api", fallbackMethod = "defaultFailResponse")
+    @CircuitBreaker(name="default", fallbackMethod = "defaultFailResponse")
     public String sampleApi() {
         logger.info("Sample API call received");
 
