@@ -1,6 +1,9 @@
 package com.in28minutes.microservices.currencyconversionservice;
 
 import lombok.AllArgsConstructor;
+import org.springframework.boot.web.client.RestTemplateBuilder;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -10,11 +13,22 @@ import org.springframework.web.client.RestTemplate;
 import java.math.BigDecimal;
 import java.util.HashMap;
 
+// in a config file
+// to be able to trace the requests across the other service
+@Configuration(proxyBeanMethods = false)
+class RestTemplateConfiguration {
+
+    @Bean
+    RestTemplate restTemplate(RestTemplateBuilder builder) {
+        return builder.build();
+    }
+}
+
 @RestController
 @AllArgsConstructor
 public class CurrencyConversionController {
-
-    private CurrencyExchangeProxy exchangeProxy;
+   private CurrencyExchangeProxy exchangeProxy;
+    private RestTemplate restTemplate;
 
     @GetMapping("/currency-conversion/from/{from}/to/{to}/quantity/{quantity}")
     public CurrencyConversion calculateCurrencyConversion(
@@ -28,7 +42,7 @@ public class CurrencyConversionController {
         uriVariables.put("to", to);
 
         // Rest template is used to make rest calls to other services
-        ResponseEntity<CurrencyConversion> responseEntity = new RestTemplate().getForEntity(
+        ResponseEntity<CurrencyConversion> responseEntity = restTemplate.getForEntity(
                 "http://localhost:8000/currency-exchange/from/{from}/to/{to}",
                 CurrencyConversion.class,
                 uriVariables
