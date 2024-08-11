@@ -21,3 +21,16 @@
   
 - Ran the following command in the folder containing the pom.xml to build the Docker image:
     mvn spring-boot:build-image -DskipTests
+
+- to check the state of services:
+    docker-compose ps
+
+- The EUREKA_CLIENT_SERVICEURL_DEFAULTZONE property is not picked up automatically.
+  There is a permanent issue with camelcasing which creates an inconsistency.
+  EUREKA_CLIENT_SERVICEURL_DEFAULTZONE is not converted to eureka.client.serviceUrl.defaultZone. 
+  It's converted to eureka.client.serviceurl.defaultzone. 
+  a solution is to use `eureka.client.serviceUrl.defaultZone`
+
+### note
+- the environment inside the docker compose file override the app props
+- the call for the proxy service will work because we are using feign, but the call with the rest template will not work because we are hardcoding local host instead we can write currency-exchange or use a variable
